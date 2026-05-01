@@ -1,5 +1,6 @@
 from collections import deque
 from functools import partial
+import queue
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +13,7 @@ def run_wave(maze: np.ndarray, start: tuple[int, int], end: tuple[int, int]):
     distances = np.full_like(maze, -1)
     distances[start] = 0
 
-    vis_matrix = maze.copy()
+    vis_matrix = maze.astype(np.uint8)
     vis_matrix[start] = 2
 
     frames = [vis_matrix.copy()]
@@ -22,20 +23,25 @@ def run_wave(maze: np.ndarray, start: tuple[int, int], end: tuple[int, int]):
     max_x, max_y = maze.shape
 
     while queue:
-        current_cell = queue.popleft()
-
-        if current_cell == end:
-            break
-        x, y = current_cell
-
-        for dx, dy in directions:
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < max_x and 0 <= ny < max_y:
-                if maze[nx, ny] == 1 and distances[nx, ny] == -1:
-                    distances[nx, ny] = distances[x, y] + 1
-                    queue.append((nx, ny))
-                    vis_matrix[nx, ny] = 2
-                    frames.append(vis_matrix.copy())
+        
+        cells_at_current_level = len(queue)
+        
+        for j in range(cells_at_current_level):
+            current_cell = queue.popleft()
+            if current_cell == end:
+                queue.clear() 
+                break
+                
+            x, y = current_cell
+            for dx, dy in directions:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < max_x and 0 <= ny < max_y:
+                    if maze[nx, ny] == 1 and distances[nx, ny] == -1:
+                        distances[nx, ny] = distances[x, y] + 1
+                        queue.append((nx, ny))
+                        vis_matrix[nx, ny] = 2
+                        
+        frames.append(vis_matrix.copy())
 
     return distances, frames, vis_matrix
 
